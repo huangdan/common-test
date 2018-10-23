@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+  emqx:
+    image: emqx/centos7-erl:otp-21
+    depends_on:
+      - mysql_server
+      - redis_server
+      - mongo_server
+      - pgsql_server
+      - ldap_server
+    networks:
+      - emqx-bridge
+    tty: true
+
+  mysql_server:
+    image: mysql:5.6
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: emqtt
+      MYSQL_DATABASE: mqtt
+    networks:
+      - emqx-bridge
+
+  redis_server:
+    image: redis
+    restart: always
+    networks:
+      - emqx-bridge
+
+  mongo_server:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: mqtt
+    networks:
+      - emqx-bridge
+
+  pgsql_server:
+    image: centos/postgresql-10-centos7
+    restart: always
+    environment:
+      POSTGRESQL_DATABASE: mqtt
+      POSTGRESQL_USER: root
+      POSTGRESQL_PASSWORD: emqtt
+    networks:
+      - emqx-bridge
+
+  ldap_server:
+    build: ./emqx-ldap
+    image: emqx-ldap:1.0
+    environment:
+      LDAP_TLS: "false"
+      LDAP_BASE_DN: "dc=emqtt,dc=com"
+      LDAP_DOMAIN: "emqtt.com" 
+    networks:
+      - emqx-bridge
+    command: --copy-service 
+  
+networks:
+  emqx-bridge:
+    driver: bridge
